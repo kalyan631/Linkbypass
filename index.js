@@ -14,7 +14,7 @@ app.listen(PORT, () => {
   console.log("Server running on port " + PORT);
 });
 
-// 🤖 Bot init
+// 🤖 Bot
 const bot = new TelegramBot(process.env.BOT_TOKEN, { polling: true });
 
 // ⚡ Random ping
@@ -29,11 +29,11 @@ bot.onText(/\/start/, (msg) => {
       *LINK BYPASS BOT*
 ╚═══════🤖═══════╝
 
-⚡ Fast • No Lag  
-🔓 Direct Links  
+⚡ Fast • Stable  
+🔓 Multi Bypass  
 🚀 Easy to Use  
 
-👇 Choose option below
+👇 Choose option
 `, {
     parse_mode: "Markdown",
     reply_markup: {
@@ -48,7 +48,7 @@ bot.onText(/\/start/, (msg) => {
   });
 });
 
-// 🎮 Buttons
+// 🎮 BUTTONS
 bot.on("callback_query", async (query) => {
   const chatId = query.message.chat.id;
 
@@ -68,12 +68,12 @@ bot.on("callback_query", async (query) => {
 ❓ *HOW TO USE*
 
 1️⃣ Send any short link  
-2️⃣ Wait 1-2 sec  
+2️⃣ Wait 1-3 sec  
 3️⃣ Get direct link 🔓  
 
 ⚡ Commands:
-/start - Start bot  
-/ping - Check speed  
+/start  
+/ping  
 
 👑 @Revenge_mode
 `, { parse_mode: "Markdown" });
@@ -89,7 +89,7 @@ bot.onText(/\/ping/, (msg) => {
   bot.sendMessage(msg.chat.id, `⚡ Ping: ${randomPing()} ms`);
 });
 
-// 🔥 Main message handler
+// 🔥 MAIN HANDLER
 bot.on("message", async (msg) => {
   const chatId = msg.chat.id;
   const text = msg.text;
@@ -103,10 +103,34 @@ bot.on("message", async (msg) => {
   bot.sendMessage(chatId, "⏳ Bypassing...");
 
   try {
-    const res = await fetch(`https://api.bypass.vip/?url=${encodeURIComponent(text)}`);
-    const data = await res.json();
+    let result = null;
 
-    if (data.result) {
+    // API 1
+    try {
+      const res1 = await fetch(`https://api.bypass.vip/?url=${encodeURIComponent(text)}`);
+      const data1 = await res1.json();
+      if (data1.result) result = data1.result;
+    } catch {}
+
+    // API 2
+    if (!result) {
+      try {
+        const res2 = await fetch(`https://bypass.pm/bypass?url=${encodeURIComponent(text)}`);
+        const data2 = await res2.json();
+        if (data2.destination) result = data2.destination;
+      } catch {}
+    }
+
+    // API 3
+    if (!result) {
+      try {
+        const res3 = await fetch(`https://api.linkvertise.com/api/v1/redirect/link/static/${encodeURIComponent(text)}`);
+        const data3 = await res3.json();
+        if (data3.data?.link?.target) result = data3.data.link.target;
+      } catch {}
+    }
+
+    if (result) {
       bot.sendMessage(chatId, `
 ╔═══════✅═══════╗
         *BYPASS DONE*
@@ -116,16 +140,23 @@ bot.on("message", async (msg) => {
 ${text}
 
 🔓 Direct:
-${data.result}
+${result}
 
-⚡ Fast • No Ads  
+⚡ Multi API Success  
 👑 @Revenge_mode
 `, { parse_mode: "Markdown" });
     } else {
-      bot.sendMessage(chatId, "❌ Cannot bypass this link");
+      bot.sendMessage(chatId, `
+❌ *FAILED*
+
+⚠️ Link not supported  
+🔒 Site protected  
+
+Try another link 💡
+`, { parse_mode: "Markdown" });
     }
 
   } catch (err) {
-    bot.sendMessage(chatId, "❌ Error while bypassing");
+    bot.sendMessage(chatId, "❌ Server error");
   }
 });
