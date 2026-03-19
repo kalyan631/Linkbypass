@@ -1,32 +1,35 @@
 const TelegramBot = require("node-telegram-bot-api");
-const puppeteer = require("puppeteer-core");
 const express = require("express");
+const fetch = require("node-fetch");
 
 const app = express();
 
+// 🌐 Alive server
 app.get("/", (req, res) => {
   res.send("🤖 Bot Running!");
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT);
+app.listen(PORT, () => {
+  console.log("Server running on port " + PORT);
+});
 
-// Bot
+// 🤖 Bot init
 const bot = new TelegramBot(process.env.BOT_TOKEN, { polling: true });
 
-// 🎯 Random Ping
+// ⚡ Random ping
 function randomPing() {
   return Math.floor(Math.random() * 200) + 50;
 }
 
-// 🎬 START
+// 🚀 START
 bot.onText(/\/start/, (msg) => {
   bot.sendMessage(msg.chat.id, `
 ╔═══════🤖═══════╗
-   *LINK BYPASS BOT*
+      *LINK BYPASS BOT*
 ╚═══════🤖═══════╝
 
-⚡ Fast Bypass  
+⚡ Fast • No Lag  
 🔓 Direct Links  
 🚀 Easy to Use  
 
@@ -45,7 +48,7 @@ bot.onText(/\/start/, (msg) => {
   });
 });
 
-// 🎮 Button Handler
+// 🎮 Buttons
 bot.on("callback_query", async (query) => {
   const chatId = query.message.chat.id;
 
@@ -65,7 +68,7 @@ bot.on("callback_query", async (query) => {
 ❓ *HOW TO USE*
 
 1️⃣ Send any short link  
-2️⃣ Wait few seconds  
+2️⃣ Wait 1-2 sec  
 3️⃣ Get direct link 🔓  
 
 ⚡ Commands:
@@ -81,73 +84,48 @@ bot.on("callback_query", async (query) => {
   }
 });
 
-// 🔥 BYPASS FUNCTION
-async function bypass(url) {
-  const browser = await puppeteer.launch({
-    executablePath: "/usr/bin/chromium-browser",
-    args: ["--no-sandbox", "--disable-setuid-sandbox"],
-    headless: true
-  });
+// ⚡ Ping command
+bot.onText(/\/ping/, (msg) => {
+  bot.sendMessage(msg.chat.id, `⚡ Ping: ${randomPing()} ms`);
+});
 
-  const page = await browser.newPage();
-  await page.goto(url, { waitUntil: "networkidle2" });
-
-  await page.waitForTimeout(8000);
-
-  try {
-    await page.evaluate(() => {
-      document.querySelectorAll("a, button").forEach(el => {
-        let t = el.innerText.toLowerCase();
-        if (t.includes("continue") || t.includes("get link")) el.click();
-      });
-    });
-  } catch {}
-
-  try {
-    await page.waitForNavigation({ timeout: 10000 });
-  } catch {}
-
-  const finalUrl = page.url();
-  await browser.close();
-  return finalUrl;
-}
-
-// 📩 MESSAGE HANDLER
+// 🔥 Main message handler
 bot.on("message", async (msg) => {
   const chatId = msg.chat.id;
   const text = msg.text;
 
-  if (text.startsWith("/start")) return;
-
-  if (text === "/ping") {
-    return bot.sendMessage(chatId, `⚡ Ping: ${randomPing()} ms`);
-  }
+  if (!text || text.startsWith("/")) return;
 
   if (!text.startsWith("http")) {
     return bot.sendMessage(chatId, "❌ Send valid link");
   }
 
-  bot.sendMessage(chatId, "⏳ Processing...");
+  bot.sendMessage(chatId, "⏳ Bypassing...");
 
   try {
-    const result = await bypass(text);
+    const res = await fetch(`https://api.bypass.vip/?url=${encodeURIComponent(text)}`);
+    const data = await res.json();
 
-    bot.sendMessage(chatId, `
+    if (data.result) {
+      bot.sendMessage(chatId, `
 ╔═══════✅═══════╗
-   *BYPASS DONE*
+        *BYPASS DONE*
 ╚═══════✅═══════╝
 
 🔗 Original:
 ${text}
 
 🔓 Direct:
-${result}
+${data.result}
 
-🚀 No Ads • Fast  
+⚡ Fast • No Ads  
 👑 @Revenge_mode
 `, { parse_mode: "Markdown" });
+    } else {
+      bot.sendMessage(chatId, "❌ Cannot bypass this link");
+    }
 
-  } catch {
-    bot.sendMessage(chatId, "❌ Failed to bypass");
+  } catch (err) {
+    bot.sendMessage(chatId, "❌ Error while bypassing");
   }
 });
